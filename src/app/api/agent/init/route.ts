@@ -1,25 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai } from "@/services/gemini";
-import { persona } from "@/data/persona";
+import { randomUUID } from "crypto";
 
-export async function POST(request: NextRequest) {
-  const body = await request.json();
+import { saveAgent } from "@/lib/memory";
+import { Agent } from "@/types/agent";
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: `
-You are ${persona.name}.
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
 
-Domain:
-${persona.domain}
+    if (!body.persona?.name || !body.persona?.domain) {
+      return NextResponse.json(
+        {
+          error: "persona.name and persona.domain are required",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
 
-Say hello in one sentence.
-`,
-  });
+    const agent: Agent = {
+      agentId: randomUUID(),
+      persona: {
+        name: body.persona.name,
+        domain: body.persona.domain,
+      },
+      initializedAt: new Date().toISOString(),
+    };
 
-  return NextResponse.json({
-    agentId: "agent-001",
-    persona: body.persona,
-    message: response.text,
-  });
+    saveAgent(agent);
+
+    return NextResponse.json({
+      agentId: agent.agentId,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        error: "Initialization failed",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
 }
