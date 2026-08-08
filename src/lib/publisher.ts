@@ -14,7 +14,7 @@ export async function publishNextTopic() {
   const oldPosts = getPosts();
 
   for (const topic of topics) {
-    const ok = evaluateTopic(topic, oldPosts);
+   const ok = evaluateTopic(topic);
 
     if (!ok) continue;
 
